@@ -1,4 +1,5 @@
 ﻿#include "../exercise.h"
+#include <cstring>
 
 // READ: 类模板 <https://zh.cppreference.com/w/cpp/language/class_template>
 
@@ -8,7 +9,11 @@ struct Tensor4D {
     T *data;
 
     Tensor4D(unsigned int const shape_[4], T const *data_) {
-        unsigned int size = 1;
+        unsigned int size = shape_[0] * shape_[1] * shape_[2] * shape_[3];
+        shape[0] = shape_[0];
+        shape[1] = shape_[1];
+        shape[2] = shape_[2];
+        shape[3] = shape_[3];
         // TODO: 填入正确的 shape 并计算 size
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
@@ -28,6 +33,33 @@ struct Tensor4D {
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
     Tensor4D &operator+=(Tensor4D const &others) {
         // TODO: 实现单向广播的加法
+        bool broadcast_dimensions[4] = {false};
+        for (int i = 0; i < 4; i++) {
+            if (shape[i] != others.shape[i]) {
+                ASSERT(others.shape[i] == 1, "shape not match");
+                if (others.shape[i] == 1) {
+                    broadcast_dimensions[i] = true;
+                } 
+            }
+        }
+        // broadcast
+        size_t others_index[4];
+        for (size_t i = 0; i < shape[0]; i++) {
+            others_index[0] = broadcast_dimensions[0] ? 0: i;
+            for (size_t j = 0; j < shape[1]; j++) {
+                others_index[1] = broadcast_dimensions[1] ? 0: j;
+                for (size_t k = 0; k < shape[2]; k++) {
+                    others_index[2] = broadcast_dimensions[2] ? 0 : k;
+                    for (size_t l = 0; l < shape[3]; l++) {
+                        others_index[3] = broadcast_dimensions[3] ? 0 : l;
+                        auto other_index = others_index[0] * others.shape[1] * others.shape[2] * others.shape[3] + others_index[1] * others.shape[2] * others.shape[3] + others_index[2] * others.shape[3] + others_index[3];
+                        auto base_index = i * shape[1] * shape[2] * shape[3] + j * shape[2] * shape[3] + k * shape[3] + l;
+                        data[base_index] += others.data[other_index];
+                    }
+                }
+            }
+        }
+
         return *this;
     }
 };
